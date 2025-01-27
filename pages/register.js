@@ -4,15 +4,13 @@ import {
   Button,
   CssBaseline,
   TextField,
-  Alert,
   Box,
   Typography,
   Container,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import Loading from './components/loading';
-import { useMessage } from './components/MessageContext';
-
+import Loading from '../components/loading';
+import { useMessage } from '../components/MessageContext';
 
 export default function RegisterEmployee() {
   const [fullName, setFullName] = useState('');
@@ -20,7 +18,6 @@ export default function RegisterEmployee() {
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('');
   const [position, setPosition] = useState('');
-  const [alertVisibility, setAlertVisibility] = useState(false);
   const [text, setText] = useState('Register');
   const [errors, setErrors] = useState({});
   const { showMessage } = useMessage();

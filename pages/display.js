@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Email as EmailIcon, GpsFixed, LocalPhone, Apartment, InboxOutlined } from '@mui/icons-material';
-import { useMessage } from './components/MessageContext';
+import { useMessage } from '../components/MessageContext';
 
 export default function DisplayEmployee() {
     const [employees, setEmployees] = useState([]);

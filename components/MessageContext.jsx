@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState } from 'react';
 import MessageBox from './MessageBox';
+
 const MessageContext = createContext();
 
-export const MessageProvider = ({ children }) => {
+export function MessageProvider({ children }) {
     const [messageBox, setMessageBox] = useState({
         isOpen: false,
         message: '',
@@ -32,6 +33,8 @@ export const MessageProvider = ({ children }) => {
             />
         </MessageContext.Provider>
     );
-};
+}
 
-export const useMessage = () => useContext(MessageContext);
+export function useMessage() {
+    return useContext(MessageContext);
+}

@@ -3,6 +3,8 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Button } from '@mui/material';
 import { Home, PersonAdd, Reorder } from '@mui/icons-material';
 import Link from 'next/link';
+import Loading from '../components/loading';
+import { useMessage } from '../components/MessageContext';
 
 function Navbar() {
     return (
