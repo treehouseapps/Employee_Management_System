@@ -24,6 +24,7 @@ export default function DisplayEmployee() {
         employeeId: null,
         employeeName: ''
     });
+    const [editErrors, setEditErrors] = useState({});
 
     useEffect(() => {
         fetch('/api/service')
@@ -48,7 +49,49 @@ export default function DisplayEmployee() {
         setTempEmpData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const validatePhone = (phone) => {
+        const phoneRegex = /^\d{10}$/;
+        return phoneRegex.test(phone);
+    };
+
+    const validateEditForm = () => {
+        const newErrors = {};
+
+        if (tempEmpData.fullName.trim().length < 3) {
+            newErrors.fullName = 'Name must be at least 3 characters long';
+        }
+
+        if (!validateEmail(tempEmpData.email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        if (!validatePhone(tempEmpData.phone)) {
+            newErrors.phone = 'Please enter a valid 10-digit phone number';
+        }
+
+        if (tempEmpData.department.trim().length < 2) {
+            newErrors.department = 'Department must be at least 2 characters long';
+        }
+
+        if (tempEmpData.position.trim().length < 2) {
+            newErrors.position = 'Position must be at least 2 characters long';
+        }
+
+        setEditErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSave = async () => {
+        if (!validateEditForm()) {
+            showMessage('Please input the correct data before saving', 'error');
+            return;
+        }
+
         try {
             const response = await fetch(`/api/service?id=${tempEmpData._id}`, {
                 method: 'PUT',
@@ -70,8 +113,10 @@ export default function DisplayEmployee() {
                 )
             );
             setTempEmpData(null);
+            setEditErrors({});
         } catch (error) {
             console.error('Error updating employee:', error);
+            showMessage('Error updating employee', 'error');
         }
     };
 
@@ -116,6 +161,7 @@ export default function DisplayEmployee() {
 
     const handleClose = () => {
         setTempEmpData(null);
+        setEditErrors({});
     };
 
     return (
@@ -249,6 +295,8 @@ export default function DisplayEmployee() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            error={!!editErrors.fullName}
+                            helperText={editErrors.fullName}
                         />
                         <TextField
                             label="Email"
@@ -257,6 +305,8 @@ export default function DisplayEmployee() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            error={!!editErrors.email}
+                            helperText={editErrors.email}
                         />
                         <TextField
                             label="Phone"
@@ -265,6 +315,8 @@ export default function DisplayEmployee() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            error={!!editErrors.phone}
+                            helperText={editErrors.phone}
                         />
                         <TextField
                             label="Position"
@@ -273,6 +325,8 @@ export default function DisplayEmployee() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            error={!!editErrors.position}
+                            helperText={editErrors.position}
                         />
                         <TextField
                             label="Department"
@@ -281,6 +335,8 @@ export default function DisplayEmployee() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            error={!!editErrors.department}
+                            helperText={editErrors.department}
                         />
                         <Box sx={{ textAlign: 'right', marginTop: '1rem' }}>
                             <Button onClick={handleSave} variant="contained" color="primary" sx={{ marginRight: '1rem' }}>
