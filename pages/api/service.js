@@ -2,16 +2,36 @@ import { ObjectId } from 'mongodb';
 import connectToDatabase from './connection';
 
 export default async function handler(req, res) {
+    const DepartmentValue = {
+        "Human Resources (HR)": "1",
+        "Finance & Accounting": "2",
+        "Marketing & Sales": "3",
+        "Operations": "4",
+        "IT/Engineering": "5"
+    }
+    const EmployementStatusValue = {
+        "Full Time": "1",
+        "Part Time": "2",
+        "Contract": "3",
+        "Internship": "4"
+    }
+
     if (req.method === 'POST') {
         try {
-            const { fullName, email, phone, department, position } = req.body;
+            const { name, email, phoneNumber, age, gender, department, position, employmentStatus } = req.body;
             const { db } = await connectToDatabase();
+            const DepartmentNewValue = DepartmentValue[department]
+            const EmploymentStatusNewValue = EmployementStatusValue[employmentStatus]
             const result = await db.collection('employees').insertOne({
-                fullName,
+                name,
                 email,
-                phone,
-                department,
+                phoneNumber,
+                age,
+                gender,
+                department: DepartmentNewValue,
                 position,
+                employmentStatus: EmploymentStatusNewValue,
+                empStatus: 'new',
                 createdAt: new Date(),
             });
             res.status(201).json({ message: 'Employee registered successfully', data: result });
@@ -34,7 +54,7 @@ export default async function handler(req, res) {
     else if (req.method === 'PUT') {
         try {
             const { id } = req.query;
-            const { fullName, email, phone, department, position } = req.body;
+            const { name, email, phoneNumber, age, gender, department, position, employmentStatus } = req.body;
             const { db } = await connectToDatabase();
             if (!id) {
                 return res.status(400).json({ message: 'ID is required' });
@@ -43,11 +63,15 @@ export default async function handler(req, res) {
                 { _id: new ObjectId(id) }, // Assuming the employee ID is passed in the URL
                 {
                     $set: {
-                        fullName,
+                        name,
                         email,
-                        phone,
+                        phoneNumber,
+                        age,
+                        gender,
                         department,
                         position,
+                        employmentStatus,
+                        empStatus: 'edited',
                         updatedAt: new Date(), // Update timestamp
                     },
                 }

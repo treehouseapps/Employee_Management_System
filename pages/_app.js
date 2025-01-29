@@ -10,7 +10,7 @@ function MyApp({ Component, pageProps }) {
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div style={{ position: 'relative', minHeight: '100vh', paddingBottom: '80px' }}>
+      <div style={{ position: 'relative', minHeight: '100vh', paddingBottom: '80px', backgroundColor: '#F5F9FA' }}>
         <MessageProvider>
           <Navbar />
           <Component {...pageProps} />

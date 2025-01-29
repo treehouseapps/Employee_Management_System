@@ -9,10 +9,30 @@ import {
     Modal,
     TextField,
     CircularProgress,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormHelperText,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { useState, useEffect } from 'react';
-import { Email as EmailIcon, GpsFixed, LocalPhone, Apartment, InboxOutlined } from '@mui/icons-material';
+import { Email as EmailIcon, LocalPhone, InboxOutlined, Fingerprint, Wc, CalendarToday, BusinessCenter, WorkHistory } from '@mui/icons-material';
 import { useMessage } from '../components/MessageContext';
+
+const EMPLOYMENT_STATUS = {
+    1: 'Full Time',
+    2: 'Part Time',
+    3: 'Contract',
+    4: 'Internship'
+};
+const EMPLOYMENT_DEPARTEMENT = {
+    1: 'Human Resources (HR)',
+    2: 'Finance & Accounting',
+    3: 'Marketing & Sales',
+    4: 'Operations',
+    5: 'IT/Engineering'
+};
 
 export default function DisplayEmployee() {
     const [employees, setEmployees] = useState([]);
@@ -44,9 +64,9 @@ export default function DisplayEmployee() {
         setTempEmpData(employee);
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setTempEmpData((prev) => ({ ...prev, [name]: value }));
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setTempEmpData(prev => ({ ...prev, [name]: value }));
     };
 
     const validateEmail = (email) => {
@@ -62,28 +82,57 @@ export default function DisplayEmployee() {
     const validateEditForm = () => {
         const newErrors = {};
 
-        if (tempEmpData.fullName.trim().length < 3) {
-            newErrors.fullName = 'Name must be at least 3 characters long';
+        if (!tempEmpData) {
+            return false;
         }
 
-        if (!validateEmail(tempEmpData.email)) {
+        if (!tempEmpData.name || tempEmpData.name.trim().length < 3) {
+            newErrors.name = 'Name must be at least 3 characters long';
+        }
+
+        if (!tempEmpData.email || !validateEmail(tempEmpData.email)) {
             newErrors.email = 'Please enter a valid email address';
         }
 
-        if (!validatePhone(tempEmpData.phone)) {
-            newErrors.phone = 'Please enter a valid 10-digit phone number';
+        if (!tempEmpData.phoneNumber || !validatePhone(tempEmpData.phoneNumber)) {
+            newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
         }
 
-        if (tempEmpData.department.trim().length < 2) {
-            newErrors.department = 'Department must be at least 2 characters long';
+        if (!tempEmpData.gender || tempEmpData.gender === '') {
+            newErrors.gender = 'Please select a gender';
         }
 
-        if (tempEmpData.position.trim().length < 2) {
-            newErrors.position = 'Position must be at least 2 characters long';
+        if (!tempEmpData.age || tempEmpData.age < 18 || tempEmpData.age > 55) {
+            newErrors.age = 'Age must be between 18 and 55';
+        }
+
+        if (!tempEmpData.department || tempEmpData.department === '') {
+            newErrors.department = 'Please select a department';
+        }
+
+        if (!tempEmpData.position || tempEmpData.position === '') {
+            newErrors.position = 'Please select a position';
+        }
+
+        if (!tempEmpData.employmentStatus || tempEmpData.employmentStatus === '') {
+            newErrors.employmentStatus = 'Please select an employment status';
         }
 
         setEditErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const refreshEmployeeList = async () => {
+        try {
+            const response = await fetch('/api/service');
+            const { data } = await response.json();
+            if (Array.isArray(data)) {
+                setEmployees(data);
+            }
+        } catch (error) {
+            console.error('Error refreshing employee list:', error);
+            showMessage('Error refreshing list', 'error');
+        }
     };
 
     const handleSave = async () => {
@@ -91,7 +140,6 @@ export default function DisplayEmployee() {
             showMessage('Please input the correct data before saving', 'error');
             return;
         }
-
         try {
             const response = await fetch(`/api/service?id=${tempEmpData._id}`, {
                 method: 'PUT',
@@ -105,13 +153,12 @@ export default function DisplayEmployee() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const { message, data } = await response.json();
-            showMessage(message, 'success')
-            setEmployees((prevEmployees) =>
-                prevEmployees.map((emp) =>
-                    emp._id === tempEmpData._id ? { ...data, _id: emp._id } : emp
-                )
-            );
+            const { message } = await response.json();
+            showMessage(message, 'success');
+
+            // Refresh the list using the new function
+            await refreshEmployeeList();
+
             setTempEmpData(null);
             setEditErrors({});
         } catch (error) {
@@ -124,7 +171,7 @@ export default function DisplayEmployee() {
         setDeleteConfirmation({
             open: true,
             employeeId: employee._id,
-            employeeName: employee.fullName
+            employeeName: employee.name
         });
     };
 
@@ -163,6 +210,10 @@ export default function DisplayEmployee() {
         setTempEmpData(null);
         setEditErrors({});
     };
+
+    // Inside your component, add this helper function
+    const getEmploymentStatusText = (statusCode) => EMPLOYMENT_STATUS[statusCode] || 'Unknown';
+    const getEmploymentDepartementText = (statusCode) => EMPLOYMENT_DEPARTEMENT[statusCode] || 'Unknown';
 
     return (
         <Container
@@ -214,8 +265,18 @@ export default function DisplayEmployee() {
                                     borderRadius: '.5rem',
                                     textAlign: 'center',
                                     backgroundColor: '#f9f9f9',
+                                    position: 'relative',
                                 }}
                             >
+                                {employee.empStatus === 'edited' && (
+                                    <EditIcon sx={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        right: '10px',
+                                        color: 'primary.main',
+                                        fontSize: '20px'
+                                    }} />
+                                )}
                                 <Avatar
                                     src={employee.img || '/placeholder.png'} // Fallback for missing images
                                     alt={employee.name}
@@ -227,7 +288,7 @@ export default function DisplayEmployee() {
                                     }}
                                 />
                                 <Typography variant="h6" fontWeight="bold">
-                                    {employee.fullName}
+                                    {employee.name}
                                 </Typography>
                                 <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                                     {employee.position}
@@ -235,16 +296,26 @@ export default function DisplayEmployee() {
                                 {/* Additional Details */}
                                 <Box sx={{ textAlign: 'left', marginTop: '1rem' }}>
                                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <GpsFixed sx={{ marginRight: '0.5rem' }} /> {employee._id}
+                                        <Fingerprint sx={{ marginRight: '0.5rem' }} /> {employee._id}
                                     </Typography>
                                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
                                         <EmailIcon sx={{ marginRight: '0.5rem' }} /> {employee.email}
                                     </Typography>
                                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <LocalPhone sx={{ marginRight: '0.5rem' }} /> {employee.phone}
+                                        <Wc sx={{ marginRight: '0.5rem' }} /> {employee.gender}
                                     </Typography>
                                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Apartment sx={{ marginRight: '0.5rem' }} /> {employee.department}
+                                        <CalendarToday sx={{ marginRight: '0.5rem' }} /> {employee.age}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <LocalPhone sx={{ marginRight: '0.5rem' }} /> {employee.phoneNumber}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <BusinessCenter sx={{ marginRight: '0.5rem' }} /> {getEmploymentDepartementText(employee.department)}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <WorkHistory sx={{ marginRight: '0.5rem' }} />
+                                        {getEmploymentStatusText(employee.employmentStatus)}
                                     </Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
@@ -278,7 +349,7 @@ export default function DisplayEmployee() {
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            width: 400,
+                            width: 600,
                             bgcolor: 'white',
                             borderRadius: '8px',
                             boxShadow: 24,
@@ -288,63 +359,146 @@ export default function DisplayEmployee() {
                         <Typography variant="h6" component="h2" mb={2}>
                             Edit Employee
                         </Typography>
-                        <TextField
-                            label="Name"
-                            name="fullName"
-                            value={tempEmpData.fullName}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                            error={!!editErrors.fullName}
-                            helperText={editErrors.fullName}
-                        />
-                        <TextField
-                            label="Email"
-                            name="email"
-                            value={tempEmpData.email}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                            error={!!editErrors.email}
-                            helperText={editErrors.email}
-                        />
-                        <TextField
-                            label="Phone"
-                            name="phone"
-                            value={tempEmpData.phone}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                            error={!!editErrors.phone}
-                            helperText={editErrors.phone}
-                        />
-                        <TextField
-                            label="Position"
-                            name="position"
-                            value={tempEmpData.position}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                            error={!!editErrors.position}
-                            helperText={editErrors.position}
-                        />
-                        <TextField
-                            label="Department"
-                            name="department"
-                            value={tempEmpData.department}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                            error={!!editErrors.department}
-                            helperText={editErrors.department}
-                        />
-                        <Box sx={{ textAlign: 'right', marginTop: '1rem' }}>
-                            <Button onClick={handleSave} variant="contained" color="primary" sx={{ marginRight: '1rem' }}>
-                                Save
-                            </Button>
-                            <Button onClick={handleClose} variant="outlined" color="secondary">
-                                Cancel
-                            </Button>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <TextField
+                                label="Full Name"
+                                name="name"
+                                value={tempEmpData.name}
+                                onChange={handleInputChange}
+                                fullWidth
+                                error={!!editErrors.name}
+                                helperText={editErrors.name}
+                            />
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <TextField
+                                    label="Email"
+                                    name="email"
+                                    value={tempEmpData.email}
+                                    onChange={handleInputChange}
+                                    fullWidth
+                                    error={!!editErrors.email}
+                                    helperText={editErrors.email}
+                                />
+                                <TextField
+                                    label="Phone"
+                                    name="phoneNumber"
+                                    value={tempEmpData.phoneNumber}
+                                    onChange={handleInputChange}
+                                    sx={{ width: '200px' }}
+                                    error={!!editErrors.phoneNumber}
+                                    helperText={editErrors.phoneNumber}
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <FormControl
+                                    sx={{ width: '200px' }}
+                                    error={!!editErrors.gender}
+                                >
+                                    <InputLabel>Gender</InputLabel>
+                                    <Select
+                                        name="gender"
+                                        value={tempEmpData.gender}
+                                        label="Gender"
+                                        onChange={handleInputChange}
+                                    >
+                                        <MenuItem value="Male">Male</MenuItem>
+                                        <MenuItem value="Female">Female</MenuItem>
+                                    </Select>
+                                    {editErrors.gender && (
+                                        <FormHelperText>{editErrors.gender}</FormHelperText>
+                                    )}
+                                </FormControl>
+                                <TextField
+                                    label="Age"
+                                    name="age"
+                                    type="number"
+                                    value={tempEmpData.age}
+                                    onChange={handleInputChange}
+                                    sx={{ width: '150px' }}
+                                    error={!!editErrors.age}
+                                    helperText={editErrors.age}
+                                    InputProps={{ inputProps: { min: 18, max: 100 } }}
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <FormControl
+                                    sx={{ width: '50%' }}
+                                    error={!!editErrors.department}
+                                >
+                                    <InputLabel>Department</InputLabel>
+                                    <Select
+                                        name="department"
+                                        value={tempEmpData.department || ''}
+                                        label="Department"
+                                        onChange={handleInputChange}
+                                    >
+                                        <MenuItem value={1}>Human Resources (HR)</MenuItem>
+                                        <MenuItem value={2}>Finance & Accounting</MenuItem>
+                                        <MenuItem value={3}>Marketing & Sales</MenuItem>
+                                        <MenuItem value={4}>Operations</MenuItem>
+                                        <MenuItem value={5}>IT/Engineering</MenuItem>
+                                    </Select>
+                                    {editErrors.department && (
+                                        <FormHelperText>{editErrors.department}</FormHelperText>
+                                    )}
+                                </FormControl>
+                                <FormControl
+                                    sx={{ width: '50%' }}
+                                    error={!!editErrors.position}
+                                >
+                                    <InputLabel>Position</InputLabel>
+                                    <Select
+                                        name="position"
+                                        value={tempEmpData.position}
+                                        label="Position"
+                                        onChange={handleInputChange}
+                                    >
+                                        <MenuItem value="Team Leader">Team Leader</MenuItem>
+                                        <MenuItem value="Assistant">Assistant</MenuItem>
+                                        <MenuItem value="Member">Member</MenuItem>
+                                    </Select>
+                                    {editErrors.position && (
+                                        <FormHelperText>{editErrors.position}</FormHelperText>
+                                    )}
+                                </FormControl>
+                            </Box>
+                            <FormControl
+                                fullWidth
+                                error={!!editErrors.employmentStatus}
+                            >
+                                <InputLabel>Employment Status</InputLabel>
+                                <Select
+                                    name="employmentStatus"
+                                    value={getEmploymentStatusText(tempEmpData.employmentStatus)}
+                                    label="Employment Status"
+                                    onChange={handleInputChange}
+                                >
+                                    <MenuItem value={"Full Time"}>Full Time</MenuItem>
+                                    <MenuItem value={'Part Time'}>Part Time</MenuItem>
+                                    <MenuItem value={'Contract'}>Contract</MenuItem>
+                                    <MenuItem value={'Internship'}>Internship</MenuItem>
+                                </Select>
+                                {editErrors.employmentStatus && (
+                                    <FormHelperText>{editErrors.employmentStatus}</FormHelperText>
+                                )}
+                            </FormControl>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                                <Button onClick={handleClose} variant="outlined" color="secondary">
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleSave}
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{
+                                        padding: '0.8rem 2rem',
+                                        fontSize: '1.1rem',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    Save Changes
+                                </Button>
+                            </Box>
                         </Box>
                     </Box>
                 </Modal>
